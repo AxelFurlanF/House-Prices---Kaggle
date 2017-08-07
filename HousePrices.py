@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy import stats
 
 #Datasets
 train = pd.read_csv('train.csv', header = 0)
@@ -24,6 +25,51 @@ f, ax = plt.subplots(figsize=(12, 9))
 sns.heatmap(corrmat, vmax=.8, square=True);
 plt.yticks(rotation=0) 
 plt.xticks(rotation=90)
+
+#saleprice correlation matrix
+k = 10 #number of variables for heatmap
+cols = corrmat.nlargest(k, 'SalePrice')['SalePrice'].index
+cm = np.corrcoef(train[cols].values.T)
+sns.set(font_scale=1.25)
+hm = sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 10}, yticklabels=cols.values, xticklabels=cols.values)
+plt.yticks(rotation=0) 
+plt.xticks(rotation=90)
+plt.show()
+
+
+#scatterplot
+sns.set()
+cols = ['SalePrice', 'OverallQual', 'GrLivArea', 'GarageCars', 'TotalBsmtSF', 'FullBath', 'YearBuilt']
+sns.pairplot(train[cols], size = 1.5, plot_kws={'s':10})
+plt.show();
+
+#applying log transformation
+train['SalePrice'] = np.log(train['SalePrice'])
+train['GrLivArea'] = np.log(train['GrLivArea'])
+
+#histogram and normal probability plot
+sns.distplot(train['SalePrice'], fit=stats.norm);
+fig = plt.figure()
+res = stats.probplot(train['SalePrice'], plot=plt)
+
+#histogram and normal probability plot
+sns.distplot(train['GrLivArea'], fit=stats.norm);
+fig = plt.figure()
+res = stats.probplot(train['GrLivArea'], plot=plt)
+
+#create column for new variable (one is enough because it's a binary categorical feature)
+#if area>0 it gets 1, for area==0 it gets 0
+train['HasBsmt'] = pd.Series(len(train['TotalBsmtSF']), index=train.index)
+train['HasBsmt'] = 0 
+train.loc[train['TotalBsmtSF']>0,'HasBsmt'] = 1
+
+#transform data
+train.loc[train['HasBsmt']==1,'TotalBsmtSF'] = np.log(train['TotalBsmtSF'])
+
+#histogram and normal probability plot
+sns.distplot(train[train['TotalBsmtSF']>0]['TotalBsmtSF'], fit=stats.norm);
+fig = plt.figure()
+res = stats.probplot(train[train['TotalBsmtSF']>0]['TotalBsmtSF'], plot=plt)
 
 passengers_pred=test["Id"]
 
